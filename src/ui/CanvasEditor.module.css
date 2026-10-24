@@ -3,23 +3,33 @@
   width: 100%;
   height: 100%;
   overflow: auto;
-  background: #e5e5ea;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 .canvas {
   display: block;
-  background: #ffffff;
+  background: var(--color-canvas-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   image-rendering: -webkit-optimize-contrast;
   cursor: crosshair;
 }
+
 .hint {
   position: absolute;
-  bottom: 10px;
-  left: 10px;
-  z-index: 2;
-  background: rgba(0, 0, 0, 0.65);
-  color: #fff;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 6px;
+  bottom: 16px;
+  left: 16px;
+  z-index: 10;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow);
   pointer-events: none;
 }
