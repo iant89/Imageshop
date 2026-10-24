@@ -1,0 +1,124 @@
+.glass {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius-panel);
+  border: 0.5px solid var(--color-border-outer);
+  overflow: hidden;
+  outline: none;
+}
+
+.plain {
+  border: none;
+}
+
+.glass--menubar,
+.glass--toolbar {
+  border-radius: 0;
+}
+.glass--dock {
+  border: none;
+  border-radius: var(--radius-dock);
+}
+
+/* Background glass layer: blur + tint */
+.bg {
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  background: var(--color-panel-bg);
+  backdrop-filter: blur(var(--blur-panel)) saturate(1.9);
+  -webkit-backdrop-filter: blur(var(--blur-panel)) saturate(1.9);
+  border-radius: inherit;
+  border: 0.5px solid var(--color-border-inner);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
+  pointer-events: none;
+}
+
+.glass--menubar .bg,
+.glass--toolbar .bg,
+.glass--dock .bg {
+  border: none;
+}
+
+/* Refraction / lensing layer */
+.refract {
+  position: absolute;
+  inset: -1px;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.3);
+  filter: url(#imageshop-displacement);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
+  pointer-events: none;
+  opacity: 0.25;
+}
+
+/* Tint layer — picks up wallpaper color behind the glass */
+.tint {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+/* Specular sheen — top edge highlight */
+.sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
+  pointer-events: none;
+}
+
+/* Pointer-tracking sheen */
+.sheenPointer {
+  position: absolute;
+  top: 0;
+  width: 240px;
+  height: 140px;
+  z-index: 4;
+  background: radial-gradient(
+    60% 35% at 50% 0%,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0) 75%
+  );
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+/* Rim light */
+.rim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-top: 0.5px solid var(--color-border-inner);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Opaque content surface — children live here */
+.content {
+  position: relative;
+  z-index: 10;
+  border-radius: inherit;
+}

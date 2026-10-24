@@ -1,0 +1,145 @@
+.panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: var(--color-text-primary);
+  overflow: hidden;
+}
+
+.toolsPanel .header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 6px 10px;
+  border-bottom: 0.5px solid var(--color-border-outer);
+}
+.toolsPanel .title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.group {
+  padding: 8px 10px;
+  border-bottom: 0.5px solid var(--color-border-outer);
+}
+.group:last-child { border-bottom: none; }
+.groupLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-tertiary);
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sliderLabel {
+  width: 56px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+.slider {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  background: rgba(0,0,0,0.12);
+  border-radius: 3px;
+  outline: none;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.sliderValue {
+  width: 30px;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+.toggleRow input { accent-color: var(--accent-color); }
+
+.toolRow {
+  display: flex;
+  gap: 6px;
+}
+.toolBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 44px;
+  height: 52px;
+  border-radius: 8px;
+  border: 0.5px solid var(--color-border-outer);
+  background: rgba(255,255,255,0.5);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  flex-direction: column;
+}
+.dark .toolBtn { background: rgba(255,255,255,0.08); }
+.toolBtn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+.toolBtnActive {
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color), transparent 80%);
+  color: var(--accent-color);
+}
+.toolBtn svg, .toolBtn .svg-icon { width: 16px; height: 16px; }
+.toolLabel { font-size: 11px; }
+
+.colorSwatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 0.5px solid var(--color-border-outer);
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.12);
+}
+.colorSwatch:hover { transform: scale(1.08); }
+.btnReset {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 11px;
+  border-radius: 6px;
+  border: 0.5px solid var(--color-border-outer);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  margin-top: 6px;
+}
+.btnReset:hover { background: rgba(0,0,0,0.06); }
+
+.hint {
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  border-top: 0.5px solid var(--color-border-outer);
+  margin-top: auto;
+}
