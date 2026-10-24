@@ -21,10 +21,7 @@ import type {
   ColorMode,
   Transform,
 } from '@/core/document';
-import {
-  createDocument,
-  getLayer,
-} from '@/core/document';
+import { createDocument } from '@/core/document';
 import { HistoryManager } from '@/core/history';
 
 export interface DocumentActions {
@@ -75,7 +72,7 @@ export interface DocumentActions {
 }
 
 export interface DocumentState {
-  documents: Map<string, Document>;
+  documents: Record<string, Document>;
   activeDocumentId: string | null;
   history: HistoryManager;
 }
@@ -89,7 +86,7 @@ export const documentSlice = (
   const history = new HistoryManager({ maxEntries: 100 });
 
   return {
-    documents: new Map(),
+    documents: {},
     activeDocumentId: null,
     history,
 
@@ -97,7 +94,7 @@ export const documentSlice = (
       const id = `doc-${crypto.randomUUID()}`;
       const doc = createDocument(id, title, width, height, dpi, colorMode);
       set((s) => {
-        s.documents.set(id, doc);
+        s.documents[id] = doc;
         if (s.activeDocumentId === null) s.activeDocumentId = id;
       });
       history.push({
@@ -105,13 +102,13 @@ export const documentSlice = (
         label: 'New Document',
         do: () => {
           set((s) => {
-            s.documents.set(id, doc);
+            s.documents[id] = doc;
             if (s.activeDocumentId === null) s.activeDocumentId = id;
           });
         },
         undo: () => {
           set((s) => {
-            s.documents.delete(id);
+            delete s.documents[id];
             if (s.activeDocumentId === id) s.activeDocumentId = null;
           });
         },
@@ -126,11 +123,11 @@ export const documentSlice = (
     },
 
     closeDocument: (id) => {
-      const doc = get().documents.get(id);
+      const doc = get().documents[id];
       set((s) => {
-        s.documents.delete(id);
+        delete s.documents[id];
         if (s.activeDocumentId === id) {
-          const remaining = Array.from(s.documents.keys());
+          const remaining = Object.keys(s.documents);
           s.activeDocumentId = remaining.length ? (remaining[0] ?? null) : null;
         }
       });
@@ -139,17 +136,17 @@ export const documentSlice = (
         label: 'Close Document',
         do: () => {
           set((s) => {
-            s.documents.delete(id);
+            delete s.documents[id];
             if (s.activeDocumentId === id) {
-            const remaining = Array.from(s.documents.keys());
-            s.activeDocumentId = remaining.length ? (remaining[0] ?? null) : null;
+              const remaining = Object.keys(s.documents);
+              s.activeDocumentId = remaining.length ? (remaining[0] ?? null) : null;
             }
           });
         },
         undo: () => {
           if (doc) {
             set((s) => {
-              s.documents.set(id, doc);
+              s.documents[id] = doc;
               if (s.activeDocumentId === null) s.activeDocumentId = id;
             });
           }
@@ -158,12 +155,12 @@ export const documentSlice = (
     },
 
     setDocumentSize: (id, width, height) => {
-      const doc = get().documents.get(id);
+      const doc = get().documents[id];
       if (!doc) return;
       const prevW = doc.width;
       const prevH = doc.height;
       set((s) => {
-        const d = s.documents.get(id);
+        const d = s.documents[id];
         if (d) {
           d.width = width;
           d.height = height;
@@ -175,13 +172,13 @@ export const documentSlice = (
         label: 'Canvas Size',
         do: () => {
           set((s) => {
-            const d = s.documents.get(id);
+            const d = s.documents[id];
             if (d) { d.width = width; d.height = height; d.updatedAt = Date.now(); }
           });
         },
         undo: () => {
           set((s) => {
-            const d = s.documents.get(id);
+            const d = s.documents[id];
             if (d) { d.width = prevW; d.height = prevH; d.updatedAt = Date.now(); }
           });
         },
@@ -190,7 +187,7 @@ export const documentSlice = (
 
     setDocumentDirty: (id, dirty) => {
       set((s) => {
-        const d = s.documents.get(id);
+        const d = s.documents[id];
         if (d) d.dirty = dirty;
       });
     },
@@ -198,7 +195,7 @@ export const documentSlice = (
     // ---------- Layers ----------
 
     addLayer: (documentId, layer, index) => {
-      const doc = get().documents.get(documentId);
+      const doc = get().documents[documentId];
       if (!doc) return '';
       const id = `layer-${crypto.randomUUID()}`;
       const newLayer: Layer = { ...layer, id };
@@ -208,7 +205,7 @@ export const documentSlice = (
       nextLayers.splice(insertIndex, 0, newLayer);
 
       set((s) => {
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) {
           d.layers = nextLayers;
           d.activeLayerId = newLayer.id;
@@ -220,7 +217,7 @@ export const documentSlice = (
         label: 'New Layer',
         do: () => {
           set((s) => {
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) {
               d.layers = nextLayers;
               d.activeLayerId = newLayer.id;
@@ -230,7 +227,7 @@ export const documentSlice = (
         },
         undo: () => {
           set((s) => {
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) {
               d.layers = prevLayers;
               d.activeLayerId = doc.activeLayerId;
@@ -243,7 +240,7 @@ export const documentSlice = (
     },
 
     deleteLayer: (documentId, layerId) => {
-      const doc = get().documents.get(documentId);
+      const doc = get().documents[documentId];
       const layer = doc?.layers.find((l) => l.id === layerId);
       if (!doc || !layer) return;
       const prevLayers = [...doc.layers];
@@ -260,7 +257,7 @@ export const documentSlice = (
       }
 
       set((s) => {
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) {
           d.layers = nextLayers;
           d.activeLayerId = newActive;
@@ -272,7 +269,7 @@ export const documentSlice = (
         label: 'Delete Layer',
         do: () => {
           set((s) => {
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) {
               d.layers = nextLayers;
               d.activeLayerId = newActive;
@@ -282,7 +279,7 @@ export const documentSlice = (
         },
         undo: () => {
           set((s) => {
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) {
               d.layers = prevLayers;
               d.activeLayerId = prevActive;
@@ -294,7 +291,7 @@ export const documentSlice = (
     },
 
     duplicateLayer: (documentId, layerId) => {
-      const doc = get().documents.get(documentId);
+      const doc = get().documents[documentId];
       const layer = doc?.layers.find((l) => l.id === layerId);
       if (!doc || !layer) return '';
       const id = `layer-${crypto.randomUUID()}`;
@@ -305,7 +302,7 @@ export const documentSlice = (
       nextLayers.splice(insertAt, 0, copy);
 
       set((s) => {
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) {
           d.layers = nextLayers;
           d.activeLayerId = id;
@@ -317,7 +314,7 @@ export const documentSlice = (
         label: 'Duplicate Layer',
         do: () => {
           set((s) => {
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) {
               d.layers = nextLayers;
               d.activeLayerId = id;
@@ -327,7 +324,7 @@ export const documentSlice = (
         },
         undo: () => {
           set((s) => {
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) {
               d.layers = prevLayers;
               d.activeLayerId = doc.activeLayerId;
@@ -340,7 +337,7 @@ export const documentSlice = (
     },
 
     moveLayer: (documentId, layerId, newIndex) => {
-      const doc = get().documents.get(documentId);
+      const doc = get().documents[documentId];
       if (!doc) return;
       const prevLayers = [...doc.layers];
       const layerIndex = prevLayers.findIndex((l) => l.id === layerId);
@@ -350,7 +347,7 @@ export const documentSlice = (
       newIndex = Math.min(Math.max(newIndex, 0), prevLayers.length - 1);
       prevLayers.splice(newIndex, 0, moved);
       set((s) => {
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) d.layers = prevLayers;
         d!.updatedAt = Date.now();
       });
@@ -359,14 +356,14 @@ export const documentSlice = (
         label: 'Move Layer',
         do: () => {
           set((s) => {
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.layers = prevLayers;
             d!.updatedAt = Date.now();
           });
         },
         undo: () => {
           set((s) => {
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.layers = doc.layers;
             d!.updatedAt = Date.now();
           });
@@ -383,7 +380,7 @@ export const documentSlice = (
       set((s) => {
         const l = getLayerOp(s, documentId, layerId);
         if (l) l.opacity = next;
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) d.updatedAt = Date.now();
       });
       history.push({
@@ -393,7 +390,7 @@ export const documentSlice = (
           set((s) => {
             const l = getLayerOp(s, documentId, layerId);
             if (l) l.opacity = next;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -401,7 +398,7 @@ export const documentSlice = (
           set((s) => {
             const l = getLayerOp(s, documentId, layerId);
             if (l) l.opacity = prev;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -415,7 +412,7 @@ export const documentSlice = (
       set((s) => {
         const l = getLayerOp(s, documentId, layerId);
         if (l) l.blendMode = blendMode;
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) d.updatedAt = Date.now();
       });
       history.push({
@@ -425,7 +422,7 @@ export const documentSlice = (
           set((s) => {
             const l = getLayerOp(s, documentId, layerId);
             if (l) l.blendMode = blendMode;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -433,7 +430,7 @@ export const documentSlice = (
           set((s) => {
             const l = getLayerOp(s, documentId, layerId);
             if (l) l.blendMode = prev;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -447,7 +444,7 @@ export const documentSlice = (
       set((s) => {
         const l = getLayerOp(s, documentId, layerId);
         if (l) l.visible = visible;
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) d.updatedAt = Date.now();
       });
       history.push({
@@ -457,7 +454,7 @@ export const documentSlice = (
           set((s) => {
             const l = getLayerOp(s, documentId, layerId);
             if (l) l.visible = visible;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -465,7 +462,7 @@ export const documentSlice = (
           set((s) => {
             const l = getLayerOp(s, documentId, layerId);
             if (l) l.visible = prev;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -479,7 +476,7 @@ export const documentSlice = (
       set((s) => {
         const l = getLayerOp(s, documentId, layerId);
         if (l) l.lock = lock;
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) d.updatedAt = Date.now();
       });
       history.push({
@@ -489,7 +486,7 @@ export const documentSlice = (
           set((s) => {
             const l = getLayerOp(s, documentId, layerId);
             if (l) l.lock = lock;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -497,7 +494,7 @@ export const documentSlice = (
           set((s) => {
             const l = getLayerOp(s, documentId, layerId);
             if (l) l.lock = prev;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -511,7 +508,7 @@ export const documentSlice = (
       set((s) => {
         const l = getLayerOp(s, documentId, layerId);
         if (l) l.name = name;
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) d.updatedAt = Date.now();
       });
       history.push({
@@ -521,7 +518,7 @@ export const documentSlice = (
           set((s) => {
             const l = getLayerOp(s, documentId, layerId);
             if (l) l.name = name;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -529,7 +526,7 @@ export const documentSlice = (
           set((s) => {
             const l = getLayerOp(s, documentId, layerId);
             if (l) l.name = prev;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -544,7 +541,7 @@ export const documentSlice = (
         const l = getLayerOp(s, documentId, layerId);
         if (l) {
           Object.assign(l.transform, transform);
-          const d = s.documents.get(documentId);
+          const d = s.documents[documentId];
           if (d) d.updatedAt = Date.now();
         }
       });
@@ -556,7 +553,7 @@ export const documentSlice = (
             const l = getLayerOp(s, documentId, layerId);
             if (l) {
               Object.assign(l.transform, transform);
-              const d = s.documents.get(documentId);
+              const d = s.documents[documentId];
               if (d) d.updatedAt = Date.now();
             }
           });
@@ -566,7 +563,7 @@ export const documentSlice = (
             const l = getLayerOp(s, documentId, layerId);
             if (l) {
               l.transform = prev;
-              const d = s.documents.get(documentId);
+              const d = s.documents[documentId];
               if (d) d.updatedAt = Date.now();
             }
           });
@@ -583,7 +580,7 @@ export const documentSlice = (
         const l = getLayerOp(s, documentId, layerId);
         if (l) {
           l.effects = next;
-          const d = s.documents.get(documentId);
+          const d = s.documents[documentId];
           if (d) d.updatedAt = Date.now();
         }
       });
@@ -595,7 +592,7 @@ export const documentSlice = (
             const l = getLayerOp(s, documentId, layerId);
             if (l) {
               l.effects = next;
-              const d = s.documents.get(documentId);
+              const d = s.documents[documentId];
               if (d) d.updatedAt = Date.now();
             }
           });
@@ -605,7 +602,7 @@ export const documentSlice = (
             const l = getLayerOp(s, documentId, layerId);
             if (l) {
               l.effects = prev;
-              const d = s.documents.get(documentId);
+              const d = s.documents[documentId];
               if (d) d.updatedAt = Date.now();
             }
           });
@@ -622,7 +619,7 @@ export const documentSlice = (
         const l = getLayerOp(s, documentId, layerId);
         const f = l?.effects.find((e) => e.id === effectId);
         if (f) f.enabled = !prev;
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) d.updatedAt = Date.now();
       });
       history.push({
@@ -633,7 +630,7 @@ export const documentSlice = (
             const l = getLayerOp(s, documentId, layerId);
             const f = l?.effects.find((e) => e.id === effectId);
             if (f) f.enabled = !prev;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -642,7 +639,7 @@ export const documentSlice = (
             const l = getLayerOp(s, documentId, layerId);
             const f = l?.effects.find((e) => e.id === effectId);
             if (f) f.enabled = prev;
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.updatedAt = Date.now();
           });
         },
@@ -650,12 +647,12 @@ export const documentSlice = (
     },
 
     setActiveLayer: (documentId, layerId) => {
-      const doc = get().documents.get(documentId);
+      const doc = get().documents[documentId];
       if (!doc) return;
       const prev = doc.activeLayerId;
       if (prev === layerId) return;
       set((s) => {
-        const d = s.documents.get(documentId);
+        const d = s.documents[documentId];
         if (d) d.activeLayerId = layerId;
       });
       history.push({
@@ -663,13 +660,13 @@ export const documentSlice = (
         label: 'Set Active Layer',
         do: () => {
           set((s) => {
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.activeLayerId = layerId;
           });
         },
         undo: () => {
           set((s) => {
-            const d = s.documents.get(documentId);
+            const d = s.documents[documentId];
             if (d) d.activeLayerId = prev;
           });
         },
@@ -678,28 +675,28 @@ export const documentSlice = (
 
     // ---------- Accessors ----------
 
-    getDocument: (id) => get().documents.get(id),
+    getDocument: (id) => get().documents[id],
 
     getActiveDocument: () => {
       const id = get().activeDocumentId;
-      return id ? get().documents.get(id) : undefined;
+      return id ? get().documents[id] : undefined;
     },
 
     getActiveLayer: (documentId) => {
-      const doc = get().documents.get(documentId);
+      const doc = get().documents[documentId];
       if (!doc || !doc.activeLayerId) return undefined;
       return doc.layers.find((l) => l.id === doc.activeLayerId);
     },
-  };
+  } as DocumentState & DocumentActions;
 };
 
 /** Read a layer from a (possibly draft) store without immer typing friction. */
 function getLayerOp(
-  s: { documents: Map<string, Document> },
+  s: { documents: Record<string, Document> },
   documentId: string,
   layerId: string
 ): Layer | undefined {
-  return s.documents.get(documentId)?.layers.find((l) => l.id === layerId);
+  return s.documents[documentId]?.layers.find((l) => l.id === layerId);
 }
 
 export const useDocumentStore = create<DocumentStore>()(immer(documentSlice));
