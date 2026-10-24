@@ -32,22 +32,13 @@ export function LayersPanel() {
   } = useDocumentStore();
 
   const doc = getActiveDocument();
-  if (!doc) {
-    return (
-      <div className={cn(styles.panel, styles.empty)}>
-        <LayersIcon size={14} />
-        <div className={styles.emptyLabel}>No document open</div>
-      </div>
-    );
-  }
-
-  const layers: Layer[] = doc.layers;
 
   const handleAdd = useCallback(() => {
+    if (!doc) return;
     addLayer(doc.id, {
       parentId: null,
       kind: 'image',
-      name: 'Layer ' + (layers.length + 1),
+      name: 'Layer ' + (doc.layers.length + 1),
       visible: true,
       opacity: 1,
       blendMode: 'normal',
@@ -59,7 +50,18 @@ export function LayersPanel() {
       tileKey: null,
     });
     setDocumentDirty(doc.id, true);
-  }, [doc, layers.length, addLayer, setDocumentDirty]);
+  }, [doc, addLayer, setDocumentDirty]);
+
+  if (!doc) {
+    return (
+      <div className={cn(styles.panel, styles.empty)}>
+        <LayersIcon size={14} />
+        <div className={styles.emptyLabel}>No document open</div>
+      </div>
+    );
+  }
+
+  const layers: Layer[] = doc.layers;
 
   return (
     <div className={cn(styles.panel, styles.layersPanel)}>
