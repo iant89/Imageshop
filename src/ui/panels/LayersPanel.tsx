@@ -75,66 +75,28 @@ export function LayersPanel() {
 
       <div className={styles.list}>
         {/* Virtualization hook point: replace this map with a virtualized
-            renderer when layer counts exceed ~50. */}
-        {layers.map((layer) => (
+            renderer when layer counts exceed ~50. LayerRow owns its own
+            callback hooks so LayersPanel's hook count stays constant
+            regardless of layer count (avoids React #310). */}        {layers.map((layer) => (
           <LayerRow
             key={layer.id}
             layer={layer}
             active={layer.id === doc.activeLayerId}
             documentId={doc.id}
+            layers={layers}
             onToggleVisibility={() => {
               setLayerVisibility(doc.id, layer.id, !layer.visible);
               setDocumentDirty(doc.id, true);
             }}
-            onSetOpacity={useCallback(
-              (v: number) => {
-                setLayerOpacity(doc.id, layer.id, v);
-                setDocumentDirty(doc.id, true);
-              },
-              [doc.id, layer.id, setLayerOpacity, setDocumentDirty]
-            )}
-            onSetBlend={useCallback(
-              (v: BlendMode) => {
-                setLayerBlendMode(doc.id, layer.id, v);
-                setDocumentDirty(doc.id, true);
-              },
-              [doc.id, layer.id, setLayerBlendMode, setDocumentDirty]
-            )}
-            onSetLock={useCallback(
-              (v: 'none' | 'alpha' | 'position' | 'all') => {
-                setLayerLock(doc.id, layer.id, v);
-                setDocumentDirty(doc.id, true);
-              },
-              [doc.id, layer.id, setLayerLock, setDocumentDirty]
-            )}
-            onSetName={useCallback(
-              (v: string) => {
-                setLayerName(doc.id, layer.id, v);
-                setDocumentDirty(doc.id, true);
-              },
-              [doc.id, layer.id, setLayerName, setDocumentDirty]
-            )}
-            onDelete={() => {
-              deleteLayer(doc.id, layer.id);
-              setDocumentDirty(doc.id, true);
-            }}
-            onDuplicate={() => {
-              duplicateLayer(doc.id, layer.id);
-              setDocumentDirty(doc.id, true);
-            }}
-            onMoveUp={() => {
-              const idx = layers.findIndex((l) => l.id === layer.id);
-              if (idx <= 0) return;
-              moveLayer(doc.id, layer.id, idx - 1);
-              setDocumentDirty(doc.id, true);
-            }}
-            onMoveDown={() => {
-              const idx = layers.findIndex((l) => l.id === layer.id);
-              if (idx < 0 || idx >= layers.length - 1) return;
-              moveLayer(doc.id, layer.id, idx + 1);
-              setDocumentDirty(doc.id, true);
-            }}
-            onSetActive={() => setActiveLayer(doc.id, layer.id)}
+            setLayerOpacity={setLayerOpacity}
+            setLayerBlendMode={setLayerBlendMode}
+            setLayerLock={setLayerLock}
+            setLayerName={setLayerName}
+            deleteLayer={deleteLayer}
+            duplicateLayer={duplicateLayer}
+            moveLayer={moveLayer}
+            setActiveLayer={setActiveLayer}
+            setDocumentDirty={setDocumentDirty}
           />
         ))}
       </div>
@@ -146,16 +108,21 @@ interface LayerRowProps {
   layer: Layer;
   active: boolean;
   documentId: string;
+  layers: Layer[];
   onToggleVisibility: () => void;
-  onSetOpacity: (v: number) => void;
-  onSetBlend: (v: BlendMode) => void;
-  onSetLock: (v: 'none' | 'alpha' | 'position' | 'all') => void;
-  onSetName: (v: string) => void;
-  onDelete: () => void;
-  onDuplicate: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onSetActive: () => void;
+  setLayerOpacity: (id: string, layerId: string, v: number) => void;
+  setLayerBlendMode: (id: string, layerId: string, v: BlendMode) => void;
+  setLayerLock: (
+    id: string,
+    layerId: string,
+    v: 'none' | 'alpha' | 'position' | 'all'
+  ) => void;
+  setLayerName: (id: string, layerId: string, v: string) => void;
+  deleteLayer: (id: string, layerId: string) => void;
+  duplicateLayer: (id: string, layerId: string) => void;
+  moveLayer: (id: string, layerId: string, newIndex: number) => void;
+  setActiveLayer: (id: string, layerId: string) => void;
+  setDocumentDirty: (id: string, dirty: boolean) => void;
 }
 
 function LayerRow({
@@ -163,18 +130,81 @@ function LayerRow({
   active,
   documentId,
   onToggleVisibility,
-  onSetOpacity,
-  onSetBlend,
-  onSetLock,
-  onSetName,
-  onDelete,
-  onDuplicate,
-  onMoveUp,
-  onMoveDown,
-  onSetActive,
+  setLayerOpacity,
+  setLayerBlendMode,
+  setLayerLock,
+  setLayerName,
+  deleteLayer,
+  duplicateLayer,
+  moveLayer,
+  layers,
+  setActiveLayer,
+  setDocumentDirty,
 }: LayerRowProps) {
   const [renaming, setRenaming] = React.useState(false);
   const [name, setName] = React.useState(layer.name);
+
+  const onSetOpacity = useCallback(
+    (v: number) => {
+      setLayerOpacity(documentId, layer.id, v);
+      setDocumentDirty(documentId, true);
+    },
+    [documentId, layer.id, setLayerOpacity, setDocumentDirty]
+  );
+
+  const onSetBlend = useCallback(
+    (v: BlendMode) => {
+      setLayerBlendMode(documentId, layer.id, v);
+      setDocumentDirty(documentId, true);
+    },
+    [documentId, layer.id, setLayerBlendMode, setDocumentDirty]
+  );
+
+  const onSetLock = useCallback(
+    (v: 'none' | 'alpha' | 'position' | 'all') => {
+      setLayerLock(documentId, layer.id, v);
+      setDocumentDirty(documentId, true);
+    },
+    [documentId, layer.id, setLayerLock, setDocumentDirty]
+  );
+
+  const onSetName = useCallback(
+    (v: string) => {
+      setLayerName(documentId, layer.id, v);
+      setDocumentDirty(documentId, true);
+    },
+    [documentId, layer.id, setLayerName, setDocumentDirty]
+  );
+
+  const onDelete = useCallback(() => {
+    deleteLayer(documentId, layer.id);
+    setDocumentDirty(documentId, true);
+  }, [documentId, layer.id, deleteLayer, setDocumentDirty]);
+
+  const onDuplicate = useCallback(() => {
+    duplicateLayer(documentId, layer.id);
+    setDocumentDirty(documentId, true);
+  }, [documentId, layer.id, duplicateLayer, setDocumentDirty]);
+
+  const onMoveUp = useCallback(() => {
+    const idx = layers.findIndex((l) => l.id === layer.id);
+    if (idx <= 0) return;
+    moveLayer(documentId, layer.id, idx - 1);
+    setDocumentDirty(documentId, true);
+  }, [documentId, layer.id, layers, moveLayer, setDocumentDirty]);
+
+  const onMoveDown = useCallback(() => {
+    const idx = layers.findIndex((l) => l.id === layer.id);
+    if (idx < 0 || idx >= layers.length - 1) return;
+    moveLayer(documentId, layer.id, idx + 1);
+    setDocumentDirty(documentId, true);
+  }, [documentId, layer.id, layers, moveLayer, setDocumentDirty]);
+
+  const onSetActive = useCallback(() => setActiveLayer(documentId, layer.id), [
+    documentId,
+    layer.id,
+    setActiveLayer,
+  ]);
 
   const blendLabel = (m: BlendMode): string => {
     switch (m) {
