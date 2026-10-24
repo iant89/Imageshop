@@ -48,6 +48,42 @@ interface MenuBaseProps {
   className?: string;
 }
 
+// Each menu item owns its own hooks (useRef) so the parent Menu's hook count
+// stays constant regardless of how many items are rendered. This avoids
+// React #310 ("Rendered more hooks than during the previous render").
+function MenuItem({
+  item,
+  onSelect,
+  openSubmenu,
+}: {
+  item: MenuItemDef;
+  onSelect: () => void;
+  openSubmenu: (anchor: HTMLElement, items: MenuItemDef[]) => void;
+}) {
+  const itemRef = useRef<HTMLDivElement>(null);
+
+  const hasSub = Boolean(item.submenu?.length);
+
+  return (
+    <div
+      ref={itemRef}
+      key={item.id ?? String(Math.random())}
+      className={cn(styles.item, item.disabled && styles.disabled)}
+      role="menuitem"
+      aria-disabled={item.disabled ? true : undefined}
+      aria-checked={item.checked ? true : undefined}
+      onMouseEnter={() => hasSub && openSubmenu(itemRef.current!, item.submenu!)}
+      onMouseLeave={() => {}}
+      onClick={onSelect}
+    >
+      <span className={styles.label}>{item.label}</span>
+      {item.checked && <span className={styles.check}>✓</span>}
+      {hasSub && <ChevronRight className={styles.chevron} />}
+      {item.shortcut && <span className={styles.shortcut}>{item.shortcut}</span>}
+    </div>
+  );
+}
+
 export function Menu({ items, x, y, onClose, className }: MenuBaseProps) {
   const [submenu, setSubmenu] = useState<{ anchor: HTMLElement | null; items: MenuItemDef[]; x: number; y: number } | null>(null);
 
@@ -84,7 +120,6 @@ export function Menu({ items, x, y, onClose, className }: MenuBaseProps) {
             );
           }
           if (item.hidden) return null;
-          const hasSub = Boolean(item.submenu?.length);
           const handleSelect = () => {
             if (item.action && !item.disabled) {
               item.action();
@@ -92,24 +127,12 @@ export function Menu({ items, x, y, onClose, className }: MenuBaseProps) {
             setSubmenu(null);
             onClose();
           };
-          const itemRef = useRef<HTMLDivElement>(null);
           return (
-            <div
-              ref={itemRef}
-              key={item.id ?? String(Math.random())}
-              className={cn(styles.item, item.disabled && styles.disabled)}
-              role="menuitem"
-              aria-disabled={item.disabled ? true : undefined}
-              aria-checked={item.checked ? true : undefined}
-              onMouseEnter={() => hasSub && openAt(itemRef.current!, item.submenu!)}
-              onMouseLeave={() => {}}
-              onClick={handleSelect}
-            >
-              <span className={styles.label}>{item.label}</span>
-              {item.checked && <span className={styles.check}>✓</span>}
-              {hasSub && <ChevronRight className={styles.chevron} />}
-              {item.shortcut && <span className={styles.shortcut}>{item.shortcut}</span>}
-            </div>
+            <MenuItem
+              item={item}
+              onSelect={handleSelect}
+              openSubmenu={openAt}
+            />
           );
         })}
       </div>
