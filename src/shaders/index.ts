@@ -90,10 +90,10 @@ void main() {
   float sa = src.a;
   float da = dst.a;
 
+  vec3 s = src.rgb;   // premultiplied
+  vec3 d = dst.rgb;
   vec3 blended = vec3(0.0);
   if (sa > 0.0) {
-    vec3 s = src.rgb;   // premultiplied
-    vec3 d = dst.rgb;
     vec3 b = vec3(
       blendChannel(uBlendMode, s.r, d.r),
       blendChannel(uBlendMode, s.g, d.g),
