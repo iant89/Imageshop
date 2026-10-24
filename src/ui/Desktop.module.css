@@ -1,0 +1,76 @@
+.desktop {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-desktop);
+}
+
+.wallpaper {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-wallpaper);
+  overflow: hidden;
+}
+
+.gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+      60% 60% at 50% 40%,
+      #c3b1e1 0%,
+      transparent 55%
+    ),
+    radial-gradient(50% 50% at 80% 20%, #ffd6e8 0%, transparent 45%),
+    radial-gradient(40% 40% at 20% 80%, #b3e0ff 0%, transparent 50%);
+  opacity: 0.55;
+  animation: wallpaper-drift 14s ease-in-out infinite alternate;
+}
+
+.noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes wallpaper-drift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(14px, -10px); }
+}
+
+.windowsContainer {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-window);
+  overflow: hidden;
+}
+
+.windowWrap {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.windowWrap.focused {
+  z-index: 20;
+}
+
+.canvasPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: var(--color-canvas-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+}
+.canvasLabel {
+  font-size: 15px;
+  font-weight: 600;
+}
+.canvasHint {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}

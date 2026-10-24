@@ -1,0 +1,25 @@
+.wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: #e5e5ea;
+}
+.canvas {
+  display: block;
+  background: #ffffff;
+  image-rendering: -webkit-optimize-contrast;
+  cursor: crosshair;
+}
+.hint {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+}
