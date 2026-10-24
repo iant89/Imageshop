@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [arena/b6fb3a24-imageshop]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
