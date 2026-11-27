@@ -1,4 +1,8 @@
-/* Imageshop — Modern WebApp design tokens */
+/* Imageshop — Modern WebApp design tokens using @enterprise-ui/react */
+
+/* Import enterprise-ui base styles and tokens */
+@import '@enterprise-ui/react/styles.css';
+@import '@enterprise-ui/react/tokens.css';
 
 /* --- Appearance (light/dark/auto resolved by JS on :root) --- */
 :root {
