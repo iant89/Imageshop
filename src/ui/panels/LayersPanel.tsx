@@ -1,19 +1,33 @@
 /**
  * Layers panel — layer stack with visibility, blend mode, opacity, lock,
  * color tag, add/delete/duplicate, and reorder.
- *
- * Rows are rendered flat here; nested groups + drag-and-drop reorder arrive
- * in a later milestone (the store already supports parentId / moveLayer).
- * The list is small enough to render directly; a virtualization hook point is
- * marked for the 20+-layer case (see core/tiles.ts budget).
+ * Built with @enterprise-ui/react components.
  */
 
 import React, { useCallback } from 'react';
 import { useDocumentStore } from '@/state/document';
 import type { Layer, BlendMode } from '@/core/document';
-import { EyeIcon, EyeOffIcon, PlusIcon, TrashIcon, LayersIcon } from '@/design/icons';
+import {
+  Panel,
+  Button,
+  IconButton,
+  Slider,
+  Select,
+  Switch,
+  Input,
+} from '@enterprise-ui/react';
 import { cn } from '@/utils/cn';
 import styles from './LayersPanel.module.css';
+
+const BLEND_MODES: { value: BlendMode; label: string }[] = [
+  { value: 'normal', label: 'Normal' },
+  { value: 'multiply', label: 'Multiply' },
+  { value: 'screen', label: 'Screen' },
+  { value: 'overlay', label: 'Overlay' },
+  { value: 'soft-light', label: 'Soft Light' },
+  { value: 'hard-light', label: 'Hard Light' },
+  { value: 'difference', label: 'Difference' },
+];
 
 export function LayersPanel() {
   const {
@@ -44,7 +58,15 @@ export function LayersPanel() {
       blendMode: 'normal',
       lock: 'none',
       effects: [],
-      transform: { translateX: 0, translateY: 0, scaleX: 1, scaleY: 1, rotate: 0, skewX: 0, skewY: 0 },
+      transform: {
+        translateX: 0,
+        translateY: 0,
+        scaleX: 1,
+        scaleY: 1,
+        rotate: 0,
+        skewX: 0,
+        skewY: 0,
+      },
       width: doc.width,
       height: doc.height,
       tileKey: null,
@@ -55,7 +77,6 @@ export function LayersPanel() {
   if (!doc) {
     return (
       <div className={cn(styles.panel, styles.empty)}>
-        <LayersIcon size={14} />
         <div className={styles.emptyLabel}>No document open</div>
       </div>
     );
@@ -66,18 +87,18 @@ export function LayersPanel() {
   return (
     <div className={cn(styles.panel, styles.layersPanel)}>
       <div className={styles.header}>
-        <LayersIcon size={13} />
         <span className={styles.title}>Layers</span>
-        <button className={cn(styles.iconBtn, styles.btnAdd)} onClick={handleAdd} title="New layer">
-          <PlusIcon size={12} />
-        </button>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon="add"
+          onClick={handleAdd}
+          title="New layer"
+        />
       </div>
 
       <div className={styles.list}>
-        {/* Virtualization hook point: replace this map with a virtualized
-            renderer when layer counts exceed ~50. LayerRow owns its own
-            callback hooks so LayersPanel's hook count stays constant
-            regardless of layer count (avoids React #310). */}        {layers.map((layer) => (
+        {layers.map((layer) => (
           <LayerRow
             key={layer.id}
             layer={layer}
@@ -129,6 +150,7 @@ function LayerRow({
   layer,
   active,
   documentId,
+  layers,
   onToggleVisibility,
   setLayerOpacity,
   setLayerBlendMode,
@@ -137,7 +159,6 @@ function LayerRow({
   deleteLayer,
   duplicateLayer,
   moveLayer,
-  layers,
   setActiveLayer,
   setDocumentDirty,
 }: LayerRowProps) {
@@ -206,32 +227,6 @@ function LayerRow({
     setActiveLayer,
   ]);
 
-  const blendLabel = (m: BlendMode): string => {
-    switch (m) {
-      case 'normal': return 'Normal';
-      case 'multiply': return 'Multiply';
-      case 'screen': return 'Screen';
-      case 'overlay': return 'Overlay';
-      case 'soft-light': return 'Soft Light';
-      case 'hard-light': return 'Hard Light';
-      case 'color-dodge': return 'Color Dodge';
-      case 'color-burn': return 'Color Burn';
-      case 'linear-dodge': return 'Linear Dodge';
-      case 'linear-burn': return 'Linear Burn';
-      case 'vivid-light': return 'Vivid Light';
-      case 'pin-light': return 'Pin Light';
-      case 'hard-mix': return 'Hard Mix';
-      case 'difference': return 'Difference';
-      case 'exclusion': return 'Exclusion';
-      case 'hue': return 'Hue';
-      case 'saturation': return 'Saturation';
-      case 'color': return 'Color';
-      case 'luminosity': return 'Luminosity';
-      case 'dissolve': return 'Dissolve';
-    }
-    return 'Normal';
-  };
-
   return (
     <div
       className={cn(styles.row, active && styles.rowActive)}
@@ -243,15 +238,17 @@ function LayerRow({
       {/* Visibility */}
       <button
         className={cn(styles.iconBtn, !layer.visible && styles.hidden)}
-        onClick={(e) => { e.stopPropagation(); onToggleVisibility(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleVisibility();
+        }}
         title="Toggle visibility"
         aria-pressed={layer.visible}
       >
-        {layer.visible ? <EyeIcon size={11} /> : <EyeOffIcon size={11} />}
+        {layer.visible ? '👁️' : '🙈'}
       </button>
 
-      {/* Thumbnail placeholder — live off-thread thumbnails arrive with the
-          tile-cache preview pipeline (Milestone 5/perf). */}
+      {/* Thumbnail placeholder */}
       <div className={styles.thumbWrap}>
         <div className={cn(styles.thumb, styles.thumbBg)} />
         {layer.colorTag && (
@@ -261,51 +258,61 @@ function LayerRow({
 
       {/* Name */}
       {renaming ? (
-        <input
-          className={styles.nameInput}
+        <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          onBlur={() => { setRenaming(false); onSetName(name); }}
+          onBlur={() => {
+            setRenaming(false);
+            onSetName(name);
+          }}
           onKeyDown={(e) => {
-            const t = e.target as HTMLInputElement;
-            if (e.key === 'Enter') t.blur();
-            if (e.key === 'Escape') { setRenaming(false); setName(layer.name); }
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            if (e.key === 'Escape') {
+              setRenaming(false);
+              setName(layer.name);
+            }
           }}
           autoFocus
+          size="sm"
+          hideLabel
         />
       ) : (
         <div
           className={styles.name}
           title={layer.name}
-          onDoubleClick={() => { setRenaming(true); setName(layer.name); }}
+          onDoubleClick={() => {
+            setRenaming(true);
+            setName(layer.name);
+          }}
         >
           {layer.name}
         </div>
       )}
 
       {/* Blend mode */}
-      <select
-        className={styles.blendSelect}
-        value={layer.blendMode}
-        onChange={(e) => onSetBlend(e.target.value as BlendMode)}
-        title="Blend mode"
-      >
-        {['normal', 'multiply', 'screen', 'overlay', 'soft-light', 'hard-light', 'difference'].map((m) => (
-          <option key={m} value={m}>{blendLabel(m as BlendMode)}</option>
-        ))}
-      </select>
+      <div className={styles.blendSelectWrap}>
+        <Select
+          value={layer.blendMode}
+          onChange={(v) => onSetBlend(v as BlendMode)}
+          options={BLEND_MODES.map((m) => ({ value: m.value, label: m.label }))}
+          size="sm"
+        />
+      </div>
 
       {/* Opacity */}
       <div className={styles.opacityWrap}>
         <span className={styles.opacityLabel}>{Math.round(layer.opacity * 100)}%</span>
-        <input
-          className={styles.opacitySlider}
-          type="range"
-          min="0"
-          max="100"
-          value={Math.round(layer.opacity * 100)}
-          onChange={(e) => onSetOpacity(parseInt(e.target.value, 10) / 100)}
-        />
+        <div className={styles.opacitySliderWrap}>
+          <Slider
+            value={layer.opacity * 100}
+            onChange={(v) => onSetOpacity(v as number)}
+            min={0}
+            max={100}
+            step={1}
+            showValue
+            formatValue={(v) => `${Math.round(v)}%`}
+          />
+        </div>
       </div>
 
       {/* Lock */}
@@ -313,34 +320,40 @@ function LayerRow({
         <button
           className={cn(styles.lockBtn, layer.lock === 'all' && styles.lockActive)}
           title="Lock all"
-          onClick={(e) => { e.stopPropagation(); onSetLock(layer.lock === 'all' ? 'none' : 'all'); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSetLock(layer.lock === 'all' ? 'none' : 'all');
+          }}
         >
-          {'🔒'}
+          🔒
         </button>
         <button
           className={cn(styles.lockBtn, layer.lock === 'alpha' && styles.lockActive)}
           title="Lock alpha"
-          onClick={(e) => { e.stopPropagation(); onSetLock(layer.lock === 'alpha' ? 'none' : 'alpha'); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSetLock(layer.lock === 'alpha' ? 'none' : 'alpha');
+          }}
         >
-          {'🅰'}
+          🅰
         </button>
       </div>
 
       {/* Reorder */}
       <div className={styles.reorder}>
         <button className={styles.reorderBtn} onClick={onMoveUp} title="Move up">
-          <svg className={styles.reorderIcon} viewBox="0 0 10 10"><path d="M5 2l-3 3 3 3" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" /></svg>
+          ▲
         </button>
         <button className={styles.reorderBtn} onClick={onMoveDown} title="Move down">
-          <svg className={styles.reorderIcon} viewBox="0 0 10 10"><path d="M5 8l-3-3 3-3" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" /></svg>
+          ▼
         </button>
       </div>
 
       <button className={cn(styles.iconBtn, styles.btnDup)} onClick={onDuplicate} title="Duplicate layer">
-        <svg className={styles.dupIcon} viewBox="0 0 10 10"><rect width="7" height="7" x="1.5" y="1.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.2" /><path d="M1.5 1.5h3v3" stroke="currentColor" strokeLinecap="round" strokeWidth="1.2" /></svg>
+        📋
       </button>
       <button className={cn(styles.iconBtn, styles.btnDel)} onClick={onDelete} title="Delete layer">
-        <TrashIcon size={10} />
+        🗑️
       </button>
     </div>
   );

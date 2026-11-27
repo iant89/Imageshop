@@ -1,31 +1,52 @@
 /**
  * Tools panel — active tool + brush settings (size, hardness, opacity,
- * spacing, pressure response). Wired to @/state/tools.
+ * spacing, pressure response). Built with @enterprise-ui/react components.
  */
 
 import React from 'react';
 import { useToolsStore } from '@/state/tools';
-import { BrushIcon, EraserIcon, ColorIcon } from '@/design/icons';
+import type { ToolId } from '@/state/tools';
+import {
+  Button,
+  SegmentedButton,
+  Slider,
+  Switch,
+} from '@enterprise-ui/react';
+import type { BrushSettings } from '@/state/tools';
 import { cn } from '@/utils/cn';
 import styles from './ToolsPanel.module.css';
 
-export function ToolsPanel() {
-  const { activeTool, setActiveTool, brush, setBrushSetting, setBrushSettings } = useToolsStore();
+const TOOL_ITEMS = [
+  { value: 'brush', label: 'Brush', icon: 'brush' as any, ariaLabel: 'Brush tool' },
+  { value: 'eraser', label: 'Eraser', icon: 'eraser' as any, ariaLabel: 'Eraser tool' },
+];
 
-  const slider = (label: string, key: keyof typeof brush, min: number, max: number, step: number, fmt: (v: number) => string) => {
+export function ToolsPanel() {
+  const { activeTool, setActiveTool, brush, setBrushSetting, setBrushSettings } =
+    useToolsStore();
+
+  const slider = (
+    label: string,
+    key: keyof typeof brush,
+    min: number,
+    max: number,
+    step: number,
+    fmt: (v: number) => string
+  ) => {
     const value = brush[key];
     return (
       <div className={styles.sliderRow} key={label}>
         <label className={styles.sliderLabel}>{label}</label>
-        <span className={styles.sliderValue}>{fmt(value as number)}</span>
-        <input
-          className={styles.slider}
-          type="range"
-          min={String(min)}
-          max={String(max)}
-          step={String(step)}
-          value={String(value)}
-          onChange={(e) => setBrushSetting(key, parseFloat(e.target.value))}
+        <Slider
+          value={value as number}
+          onChange={(v) =>
+            setBrushSetting(key, v as BrushSettings[keyof BrushSettings])
+          }
+          min={min}
+          max={max}
+          step={step}
+          showValue
+          formatValue={fmt}
         />
       </div>
     );
@@ -34,29 +55,19 @@ export function ToolsPanel() {
   return (
     <div className={cn(styles.panel, styles.toolsPanel)}>
       <div className={styles.header}>
-        <BrushIcon size={13} />
         <span className={styles.title}>Tools</span>
       </div>
 
       <div className={styles.group}>
         <div className={styles.groupLabel}>Tool</div>
-        <div className={styles.toolRow}>
-          <ToolButton
-            id="brush"
-            active={activeTool === 'brush'}
-            onClick={() => setActiveTool('brush')}
-            icon={<BrushIcon size={11} />}
-            label="Brush"
-          />
-          <ToolButton
-            id="eraser"
-            active={activeTool === 'eraser'}
-            onClick={() => setActiveTool('eraser')}
-            icon={<EraserIcon size={11} />}
-            label="Eraser"
-          />
-
-        </div>
+        <SegmentedButton
+          items={TOOL_ITEMS}
+          value={[activeTool]}
+          onChange={(selected) => setActiveTool(selected[0] as ToolId)}
+          selectionMode="single"
+          size="sm"
+          aria-label="Tool selection"
+        />
       </div>
 
       <div className={styles.group}>
@@ -70,20 +81,18 @@ export function ToolsPanel() {
       <div className={styles.group}>
         <div className={styles.groupLabel}>Pressure</div>
         <label className={styles.toggleRow}>
-          <input
-            type="checkbox"
+          <Switch
             checked={brush.pressureSize}
-            onChange={(e) => setBrushSetting('pressureSize', e.target.checked)}
+            onChange={(checked) => setBrushSetting('pressureSize', checked)}
+            label="Size"
           />
-          Size
         </label>
         <label className={styles.toggleRow}>
-          <input
-            type="checkbox"
+          <Switch
             checked={brush.pressureOpacity}
-            onChange={(e) => setBrushSetting('pressureOpacity', e.target.checked)}
+            onChange={(checked) => setBrushSetting('pressureOpacity', checked)}
+            label="Opacity"
           />
-          Opacity
         </label>
       </div>
 
@@ -95,29 +104,20 @@ export function ToolsPanel() {
           title="Foreground color (color picker — Milestone 4)"
           onClick={() => alert('Color picker arrives in Milestone 4')}
         />
-        <button className={styles.btnReset} onClick={() => setBrushSettings({ ...brush, size: 30, hardness: 0.4, opacity: 1 })}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() =>
+            setBrushSettings({ ...brush, size: 30, hardness: 0.4, opacity: 1 })
+          }
+        >
           Reset
-        </button>
+        </Button>
       </div>
 
       <div className={styles.hint}>
         {activeTool === 'brush' ? 'Drag on canvas to paint.' : 'Select a tool to paint.'}
       </div>
     </div>
-  );
-}
-
-function ToolButton({ id, active, onClick, icon, label }: { id: string; active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
-  return (
-    <button
-      className={cn(styles.toolBtn, active && styles.toolBtnActive)}
-      onClick={onClick}
-      title={label}
-      role="button"
-      aria-pressed={active}
-    >
-      {icon}
-      <span className={styles.toolLabel}>{label}</span>
-    </button>
   );
 }
